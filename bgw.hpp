@@ -4,6 +4,7 @@
 #include "bigint.hpp"
 #include "mpio.hpp"
 #include <cassert>
+#include "constant.h"
 class Int{
 public:
     BigInt val;
@@ -229,6 +230,18 @@ struct View{
     }
 };
 
+bool check_perm(int *perm){
+    
+    int cnt[n/3];
+    memset(cnt,0,sizeof(cnt));
+    for(int i=1;i<=open_num;i++){
+        cnt[perm[i]%3]++;
+    }
+    for(int i=0;i<n/3;i++)
+        if(cnt[i]==3)
+            return false;
+    return true;
+}
 
 
 #endif

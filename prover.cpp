@@ -28,6 +28,7 @@ int main(int argc,char **argv){
         ip.push_back(string("127.0.0.1"));
     
 
+    MOD.from_hex("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
     Hash view_all;
     vector<vector<char> >view_n;
 
@@ -36,11 +37,12 @@ int main(int argc,char **argv){
     views.resize(REP);
 
     for(int it=0;it<REP;it++){
+        cerr<<"proveing "<<it<<endl;
         MPIO<RecIO,n> *io=new MPIO<RecIO,n>(party,ip,port,true);
         BGW<RecIO,n,n/2> *bgw=new BGW<RecIO,n,n/2>(io,party,MOD);
-        BigInt input(party);
+        BigInt input(party==1?1:0);
         BigInt res=compute(party,input,bgw);
-        res.print();
+        if(party==1)res.print();
 
         
         views[it].input=input;
@@ -101,11 +103,13 @@ int main(int argc,char **argv){
     }
 
     for(int it=0;it<REP;it++){
-        for(int i=2;i<=n;i++){
-            int x=prng.rand_range(i-1)+1;
-            swap(perm[i],perm[x]);
-        }
-        cerr<<"open "<<perm[1]<<" "<<perm[2]<<endl;
+        do{
+            for(int i=2;i<=n;i++){
+                int x=prng.rand_range(i-1)+1;
+                swap(perm[i],perm[x]);
+            }
+        }while(!check_perm(perm));
+        
         for(int i=1;i<=open_num;i++)if(party==perm[i]){
             int size=views[it].size();
             unsigned char *tmp=new unsigned char[size];

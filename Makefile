@@ -1,6 +1,6 @@
-prover: prover.cpp program.hpp
+prover: prover.cpp program.hpp constant.h
 	g++ $< -o $@ -lcrypto
-verifier: verifier.cpp program.hpp
+verifier: verifier.cpp program.hpp constant.h
 	g++ $< -o $@ -lcrypto
 clean:
 	rm prover verifier

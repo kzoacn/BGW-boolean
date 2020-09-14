@@ -12,6 +12,7 @@ using emp::RepIO;
 using emp::Hash;
   
 bool verify(){
+    MOD.from_hex("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
 
     FILE *fp[n+1];
     for(int i=1;i<=n;i++){
@@ -54,11 +55,13 @@ bool verify(){
 
     
     for(int it=0;it<REP;it++){
-        for(int i=2;i<=n;i++){
-            int x=prng.rand_range(i-1)+1;
-            swap(perm[i],perm[x]);
-        }
-        cerr<<"open "<<perm[1]<<" "<<perm[2]<<endl;
+        cerr<<"checking "<<it<<endl;
+        do{
+            for(int i=2;i<=n;i++){
+                int x=prng.rand_range(i-1)+1;
+                swap(perm[i],perm[x]);
+            }
+        }while(!check_perm(perm));
         
         vector<View<n> >views;
         views.resize(n+1);

@@ -17,35 +17,43 @@ int NROUNDSP[] = {56, 57, 56, 60, 60, 63, 64, 63};
 Int zero;
 Int five;
 //Int MOD;
-//int len;
-/*
-void ark(Int *state, vector<Int> c, int it) {
+int len;
+
+void ark(Int *state, vector<Int> c, int it,MPC *bgw) {
 	for(int i = 0; i < len; i++) {
-		state[i]=state[i].add_mod(c[it+i],MOD);
-	}
+		//state[i]=state[i].add_mod(c[it+i],MOD);
+        bgw->add(state[i],state[i],c[it+i]);
+    }
 }
 
-void exp5(Int &a) {
-	a=a.pow_mod(five,MOD);
+void exp5(Int &a,MPC *bgw) {
+	//a=a.pow_mod(five,MOD);
+    Int a2,a4;
+    bgw->mul(a2,a,a);
+    bgw->mul(a4,a2,a2);
+    bgw->mul(a,a,a4);
 }
 
-void sbox(int nRoundsF, int nRoundsP , Int *state,int i) {
+void sbox(int nRoundsF, int nRoundsP , Int *state,int i,MPC *bgw) {
 	if (i < nRoundsF/2 || (i >= nRoundsF/2+nRoundsP) ){
 		for (int j = 0; j < len; j++) {
-			exp5(state[j]);
+			exp5(state[j],bgw);
 		}
 	} else {
-		exp5(state[0]);
+		exp5(state[0],bgw);
 	}
 }
 
-void mix(Int *state,Int *newState, vector<vector<Int> >m) {
-	Int mul(0);
+void mix(Int *state,Int *newState, vector<vector<Int> >m,MPC *bgw) {
+	Int mul;
+    bgw->set(mul,BigInt(0),0);
 	for(int i = 0; i < len; i++) {
-		newState[i]=0;
+		bgw->set(newState[i],BigInt(0),0);
 		for(int j = 0; j < len; j++) {
-			mul=m[j][i].mul_mod(state[j],MOD);
-			newState[i]=newState[i].add_mod(mul,MOD);
+			//mul=m[j][i].mul_mod(state[j],MOD);
+			bgw->mul(mul,m[j][i],state[j]);
+            //newState[i]=newState[i].add_mod(mul,MOD);
+            bgw->add(newState[i],newState[i],mul);
 		}
 	}
 }
@@ -54,7 +62,7 @@ void mix(Int *state,Int *newState, vector<vector<Int> >m) {
 vector<vector<Int> >c;
 vector<vector<vector<Int> > >m;
 
-void Hash(vector<Int> input,Int &output) {
+void poseidon_hash(vector<Int> input,Int &output,MPC *bgw) {
     len=input.size();
 	int t = len + 1;
 	if(len == 0 || len >= 8-1 ){
@@ -77,47 +85,19 @@ void Hash(vector<Int> input,Int &output) {
 
 	// ARK --> SBox --> M, https://eprint.iacr.org/2019/458.pdf pag.5
 	for(int i = 0; i < nRoundsF+nRoundsP; i++ ){
-		ark(state, c[t-2], i*t);
-		sbox(nRoundsF, nRoundsP, state, i); 
+		ark(state, c[t-2], i*t,bgw);
+		sbox(nRoundsF, nRoundsP, state, i,bgw); 
         if(i < nRoundsF+nRoundsP-1) {
-			mix(state, newState, m[t-2]);
+			mix(state, newState, m[t-2],bgw);
 			swap(state, newState);
 		}
         
 	}
 	output = state[0];
-}*/
-/*
-int main(int argc,char **argv){ 
+}
 
-    MOD.from_hex("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
 
-    c.resize(_C.size());
-    for(int i=0;i<(int)_C.size();i++){
-        c[i].resize(_C[i].size());
-        for(int j=0;j<(int)_C[i].size();j++)
-            c[i][j].from_dec(_C[i][j].c_str());
-    }
-
-    m.resize(_M.size());
-    for(int i=0;i<(int)_M.size();i++){
-        m[i].resize(_M[i].size());
-        for(int j=0;j<(int)_M[i].size();j++){
-            m[i][j].resize(_M[i][j].size());
-            for(int k=0;k<(int)_M[i][j].size();k++)
-                m[i][j][k].from_dec(_M[i][j][k].c_str());
-        }
-    }
-
-    Int one(1);
-    vector<Int>input;
-    input.push_back(one);
-    Int output;
-    Hash(input,output);
-    output.print();
- 
-    return 0;
-}*/
+    //MOD.from_hex("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
 
 
 
@@ -126,7 +106,44 @@ BigInt compute(int party,BigInt input,MPC *bgw){
     bgw->set(zero,BigInt(0),0);
     bgw->set(five,BigInt(5),0);
 
-    return bgw->reveal(five);
+
+    c.resize(_C.size());
+    for(int i=0;i<(int)_C.size();i++){
+        c[i].resize(_C[i].size());
+        for(int j=0;j<(int)_C[i].size();j++){
+            BigInt tmp;
+            tmp.from_dec(_C[i][j].c_str());
+            bgw->set(c[i][j],tmp,0);
+        }
+    }
+
+    m.resize(_M.size());
+    for(int i=0;i<(int)_M.size();i++){
+        m[i].resize(_M[i].size());
+        for(int j=0;j<(int)_M[i].size();j++){
+            m[i][j].resize(_M[i][j].size());
+            for(int k=0;k<(int)_M[i][j].size();k++){
+                BigInt tmp;
+                tmp.from_dec(_M[i][j][k].c_str());
+                bgw->set(m[i][j][k],tmp,0);
+            }
+        }
+    }
+
+    Int sum;
+    bgw->set(sum,BigInt(0),0);
+    Int tmp;
+    for(int i=1;i<=n;i++){
+        bgw->set(tmp,input,i);
+        bgw->add(sum,sum,tmp);
+    }
+
+    vector<Int>inputs;
+    inputs.push_back(sum);
+    Int output;
+    poseidon_hash(inputs,output,bgw);
+
+    return bgw->reveal(output);
 }
 
 #endif
