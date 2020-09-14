@@ -4,92 +4,14 @@
 #include <iostream>
 #include <vector>
 #include "constant.h"
+#include "program.hpp"
 
 using namespace std;
 using emp::RecIO;
 using emp::RepIO;
 using emp::Hash;
-
-int party,port;
-
-
-BigInt compute(int party,BigInt input,MPC *bgw){
-
-    BigInt x=input;
-    Int c[n+1];
-    for(int i=1;i<=n;i++){
-        bgw->set(c[i],x,i);
-    }
-    Int r;
-    bgw->add(r,c[1],c[2]);;
-    bgw->mul(r,r,c[3]);
-
-    return bgw->reveal(r);
-}
-
-
-struct View{
-    BigInt input;
-    PRNG prng;
-    vector<vector<char> >trans;
-    void from_bin(unsigned char *in){
-        int size;
-        memcpy(&size,in,4);
-        size+=4;
-        input.from_bin(in+4,size);
-        
-        memcpy(prng.seed,in+size,sizeof(prng.seed));
-        size+=sizeof(prng.seed);
-        trans.resize(n+1);
-        for(int i=1;i<=n;i++){
-            int sz=0;
-            memcpy(&sz,in+size,4);
-            size+=4;
-            
-            trans[i].resize(sz);
-            
-            memcpy(trans[i].data(),in+size,sz);
-            size+=sz;
-        }
-    }
-    void to_bin(unsigned char *out){
-        int size=input.size();
-        memcpy(out,&size,4);
-        size+=4;
-        input.to_bin(out+4);
-        memcpy(out+size,prng.seed,sizeof(prng.seed));
-        size+=sizeof(prng.seed);
-        for(int i=1;i<=n;i++){
-            int sz=trans[i].size();
-            memcpy(out+size,&sz,4);
-            size+=4;
-            memcpy(out+size,trans[i].data(),sz);
-            size+=sz;
-        }
-    }
-    int size(){
-        int size=0;
-        size+=4;
-        size+=input.size();
-        size+=sizeof(prng.seed);
-        for(int i=1;i<=n;i++){
-            int sz=trans[i].size();
-            size+=4;
-            size+=sz;
-        }
-        return size;
-    }
-    void digest(char *out){
-        Hash view_hash;
-        unsigned char *tmp=new unsigned char[size()];
-        to_bin(tmp);
-        view_hash.put(tmp,size());
-        delete []tmp;
-        view_hash.digest(out);
-    }
-};
-
-int main(int argc,char **argv){
+  
+bool verify(){
 
     FILE *fp[n+1];
     for(int i=1;i<=n;i++){
@@ -108,7 +30,7 @@ int main(int argc,char **argv){
         views_hash[i].resize(REP);
         for(int it=0;it<REP;it++){
             views_hash[i][it].resize(Hash::DIGEST_SIZE);
-    
+
             fread(views_hash[i][it].data(),1,Hash::DIGEST_SIZE,fp[i]);
     
             view_all.put(views_hash[i][it].data(),Hash::DIGEST_SIZE);
@@ -129,24 +51,76 @@ int main(int argc,char **argv){
     for(int i=1;i<=n;i++)
         perm[i]=i;
 
+
+    
     for(int it=0;it<REP;it++){
         for(int i=2;i<=n;i++){
             int x=prng.rand_range(i-1)+1;
             swap(perm[i],perm[x]);
         }
         cerr<<"open "<<perm[1]<<" "<<perm[2]<<endl;
+        
+        vector<View<n> >views;
+        views.resize(n+1);
         for(int i=1;i<=open_num;i++){
-            /*
-            int size=views[it].size();
-            unsigned char *tmp=new unsigned char[size];
-            views[it].to_bin(tmp);
-            fwrite(tmp,1,size,fp);*/
+            int x=perm[i];
+            static unsigned char tmp[MAX_SIZE];
+            int size;
+            fread(&size,1,4,fp[x]);
+            fread(tmp,1,size,fp[x]);
+            views[x].from_bin(tmp);
+        }
+
+        for(int i=1;i<=open_num;i++){
+            int x=perm[i];
+
+            vector<string>ip(n+1,"");
+            MPIO<RepIO,n> *io2=new MPIO<RepIO,n>(x,ip,0,true);
+
+            for(int j=1;j<=n;j++)if(j!=x){
+                io2->recv_io[j]->recv_rec=views[x].trans[j];
+            }
+
+            BGW<RepIO,n,n/2> *bgw2=new BGW<RepIO,n,n/2>(io2,x,MOD);
+            
+            bgw2->prng=views[x].prng;
+            bgw2->prng.rewind();
+            BigInt input=views[x].input;
+            BigInt res=compute(x,input,bgw2);
+            res.print();
+
+            for(int j=1;j<=open_num;j++)if(i!=j){
+                int y=perm[j];
+                char tmp1[Hash::DIGEST_SIZE],tmp2[Hash::DIGEST_SIZE];
+                io2->send_io[y]->send_hash.digest(tmp1);
+                Hash h;
+                h.put(views[y].trans[x].data(),views[y].trans[x].size());
+                h.digest(tmp2);
+                if(memcmp(tmp1,tmp2,Hash::DIGEST_SIZE)!=0){
+                    cerr<<"error ! consistent"<<endl;
+                    //return false;
+                }
+            }
+            delete io2;
+            delete bgw2;
         }
     }
 
     for(int i=1;i<=n;i++)
         fclose(fp[i]);
 
+    return true;
+}
+
+
+int main(int argc,char **argv){
+
+    
+    if(verify()){
+        puts("Yes");
+    }else{
+        puts("No");
+    }
 
 
     return 0;

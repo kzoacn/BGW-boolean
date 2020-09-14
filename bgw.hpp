@@ -166,4 +166,69 @@ public:
 };
 
 
+
+using emp::Hash;
+template<int n>
+struct View{
+    BigInt input;
+    PRNG prng;
+    vector<vector<char> >trans;
+    void from_bin(unsigned char *in){
+        int size;
+        memcpy(&size,in,4);
+        input.from_bin(in+4,size);
+        size+=4;
+        memcpy(prng.seed,in+size,sizeof(prng.seed));
+        size+=sizeof(prng.seed);
+        trans.resize(n+1);
+        for(int i=1;i<=n;i++){
+            int sz=0;
+            memcpy(&sz,in+size,4);
+            size+=4;
+            
+            trans[i].resize(sz);
+            
+            memcpy(trans[i].data(),in+size,sz);
+            size+=sz;
+        }
+    }
+    void to_bin(unsigned char *out){
+        int size=input.size();
+        memcpy(out,&size,4);
+        size+=4;
+        input.to_bin(out+4);
+        memcpy(out+size,prng.seed,sizeof(prng.seed));
+        size+=sizeof(prng.seed);
+        for(int i=1;i<=n;i++){
+            int sz=trans[i].size();
+            memcpy(out+size,&sz,4);
+            size+=4;
+            memcpy(out+size,trans[i].data(),sz);
+            size+=sz;
+        }
+    }
+    int size(){
+        int size=0;
+        size+=4;
+        size+=input.size();
+        size+=sizeof(prng.seed);
+        for(int i=1;i<=n;i++){
+            int sz=trans[i].size();
+            size+=4;
+            size+=sz;
+        }
+        return size;
+    }
+    void digest(char *out){
+        Hash view_hash;
+        unsigned char *tmp=new unsigned char[size()];
+        to_bin(tmp);
+        view_hash.put(tmp,size());
+        delete []tmp;
+        view_hash.digest(out);
+    }
+};
+
+
+
 #endif

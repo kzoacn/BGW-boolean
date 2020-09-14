@@ -1,7 +1,7 @@
-main: main.cpp
-	g++ main.cpp -o main
-test_io: test_io.cpp 
-	g++ test_io.cpp -o test_io
+prover: prover.cpp program.hpp
+	g++ $< -o $@ -lcrypto
+verifier: verifier.cpp program.hpp
+	g++ $< -o $@ -lcrypto
 clean:
-	rm test_io
-all: test_io
+	rm prover verifier
+all: prover verifier
