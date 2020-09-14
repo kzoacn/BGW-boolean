@@ -2,9 +2,11 @@
 #define _BIG_INT__
 
 #include <openssl/bn.h>
+#include <openssl/rand.h>
 #include <string>
 #include <iostream>
 #include <cstring>
+#include "emp-tool/utils/hash.h"
 using std::string;
 
 BN_CTX *default_ctx=BN_CTX_new();
@@ -21,6 +23,7 @@ class BigInt { public:
 	void to_bin(unsigned char * in);
 	void from_bin(const unsigned char * in, int length);
     void from_dec(const char *str);
+    void from_hex(const char *str);
     void from_ulong(unsigned long long x);
 	void print()const;
 
@@ -70,6 +73,11 @@ inline void BigInt::from_dec(const char *str) {
 	BN_free(n);
 	n=NULL;
     BN_dec2bn(&n,str);
+}
+inline void BigInt::from_hex(const char *str) {
+	BN_free(n);
+	n=NULL;
+    BN_hex2bn(&n,str);
 }
 inline void BigInt::from_ulong(unsigned long long x) {
 	string s=std::to_string(x);
@@ -126,10 +134,42 @@ inline BigInt BigInt::mod(const BigInt &oth, BN_CTX *ctx) {
 }
 
 class PRNG{
+	emp::Hash hash;
+	int counter=0;
+	char dig[emp::Hash::DIGEST_SIZE];
 public:
+	unsigned char seed[256];
+	PRNG(){
+		FILE *fp=fopen("/dev/urandom","rb");
+		fread(seed,1,256,fp);
+		fclose(fp);
+	}
+	void rewind(){
+		counter=0;
+	}
+	void reseed(const void *data,int len){
+		memset(seed,0,sizeof(seed));
+		memcpy(seed,data,std::min(len,256));
+	}
+	int rand_range(int m){
+        hash.reset();
+		hash.put(seed,256);
+		hash.put(&counter,4);
+		counter++;
+		hash.digest(dig);
+		int ret=*(int*)dig;
+        ret=(ret%m+m)%m;
+        return ret;
+	}
     BigInt rand_range(const BigInt &m){
         BigInt ret;
-        BN_rand_range(ret.n,m.n);
+		hash.reset();
+		hash.put(seed,256);
+		hash.put(&counter,4);
+		counter++;
+		hash.digest(dig);
+		BN_bin2bn((unsigned char*)dig,sizeof(dig),ret.n);
+        ret=ret.mod(m);
         return ret;
     }
 };

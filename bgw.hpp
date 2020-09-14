@@ -2,7 +2,6 @@
 #define _BGW__HPP
 
 #include "bigint.hpp"
-#include "io.hpp"
 #include "mpio.hpp"
 #include <cassert>
 class Int{
@@ -11,9 +10,19 @@ public:
     
 };
 
+
+class MPC{
+public:
+    virtual void set(Int &c,BigInt a,int p)=0;
+    virtual void add(Int &c,const Int &a,const Int &b)=0;
+    virtual void mul(Int &c,const Int &a,const Int &b)=0;
+    virtual BigInt reveal(const Int &a)=0;
+};
+
 template<class IO,int n,int t>
-class BGW{
-private:
+class BGW : public MPC{
+
+public:
     BigInt MOD;
     int party;
     MPIO<IO,n> *io;
@@ -22,7 +31,6 @@ private:
     BigInt lambda[n+1];    
     BigInt lambda_t[n+1];    
     
-public:
 
     BGW(MPIO<IO,n> *io,int party,BigInt MOD){
         this->io=io;
@@ -30,7 +38,7 @@ public:
         this->MOD=MOD;
         //2*t+1==n
         //cerr<<"hi"<<endl;
-        
+
         assert(2*t+1==n);
         BigInt zero;zero.from_ulong(0);
         BigInt two;two.from_ulong(2);
@@ -63,7 +71,10 @@ public:
             den=den.pow_mod(MOD.sub(two),MOD);
             lambda_t[i]=num.mul_mod(den,MOD);
         }
-        
+    }
+
+    ~BGW(){
+
     }
 
     void set(Int &c,BigInt a,int p){
@@ -88,8 +99,10 @@ public:
         }else{
             BigInt cof[t+1];
             cof[0]=a;
+            
             for(int i=1;i<=t;i++)
                 cof[i]=prng.rand_range(MOD);
+            
             if(p==party){
                 BigInt sum(0);
                 
@@ -107,6 +120,7 @@ public:
                         c.val=r;
                     }else{
                         io->send_bigint(i,r);
+                        
                     }
                 }
 
