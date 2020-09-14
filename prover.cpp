@@ -3,6 +3,7 @@
 #include "bgw.hpp"
 #include <iostream>
 #include <vector>
+#include "constant.h"
 
 using namespace std;
 using emp::RecIO;
@@ -10,12 +11,6 @@ using emp::RepIO;
 using emp::Hash;
 
 int party,port;
-
-const int n=9;
-const int open_num=2;
-
-const int REP=1;
-
 
 
 BigInt compute(int party,BigInt input,MPC *bgw){
@@ -185,6 +180,7 @@ int main(int argc,char **argv){
             int x=prng.rand_range(i-1)+1;
             swap(perm[i],perm[x]);
         }
+        cerr<<"open "<<perm[1]<<" "<<perm[2]<<endl;
         for(int i=1;i<=open_num;i++)if(party==perm[i]){
             int size=views[it].size();
             unsigned char *tmp=new unsigned char[size];
