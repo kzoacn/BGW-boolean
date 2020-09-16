@@ -31,9 +31,11 @@ public:
 
     BigInt lambda[n+1];    
     BigInt lambda_t[n+1];    
-    
+    int add_cnt;
+    int mul_cnt;
 
     BGW(MPIO<IO,n> *io,int party,BigInt MOD){
+        add_cnt=mul_cnt=0;
         this->io=io;
         this->party=party;
         this->MOD=MOD;
@@ -54,7 +56,7 @@ public:
                 num=num.mul_mod(tmp,MOD);
                 den=den.mul_mod(xi.sub_mod(xj,MOD),MOD);
             }
-            den=den.pow_mod(MOD.sub(two),MOD);
+            den=den.inv_mod(MOD);
             lambda[i]=num.mul_mod(den,MOD);
         }
 
@@ -69,7 +71,7 @@ public:
                 num=num.mul_mod(tmp,MOD);
                 den=den.mul_mod(xi.sub_mod(xj,MOD),MOD);
             }
-            den=den.pow_mod(MOD.sub(two),MOD);
+            den=den.inv_mod(MOD);
             lambda_t[i]=num.mul_mod(den,MOD);
         }
     }
@@ -85,6 +87,7 @@ public:
     void add(Int &c,const Int &a,const Int &b){
         c.val=a.val;
         c.val=c.val.add_mod(b.val,MOD);
+        add_cnt++;
     }
 
     Int share(BigInt a,int p){
@@ -101,8 +104,9 @@ public:
             BigInt cof[t+1];
             cof[0]=a;
             
+            BigInt bound(10);
             for(int i=1;i<=t;i++)
-                cof[i]=prng.rand_range(MOD);
+                cof[i]=prng.rand_range(bound);
             
             if(p==party){
                 BigInt sum(0);
@@ -133,6 +137,7 @@ public:
     }
 
     void mul(Int &c,const Int &a,const Int &b){
+        mul_cnt++;
         BigInt ab=a.val;
         ab=ab.mul_mod(b.val,MOD);
         c.val.from_ulong(0);

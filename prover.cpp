@@ -26,9 +26,8 @@ int main(int argc,char **argv){
     vector<string>ip;
     for(int i=0;i<=n+1;i++)
         ip.push_back(string("127.0.0.1"));
+    MOD.from_dec(MOD_STR);
     
-
-    MOD.from_hex("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
     Hash view_all;
     vector<vector<char> >view_n;
 
@@ -40,7 +39,7 @@ int main(int argc,char **argv){
         cerr<<"proveing "<<it<<endl;
         MPIO<RecIO,n> *io=new MPIO<RecIO,n>(party,ip,port,true);
         BGW<RecIO,n,n/2> *bgw=new BGW<RecIO,n,n/2>(io,party,MOD);
-        BigInt input(party==1?1:0);
+        BigInt input(party);
         BigInt res=compute(party,input,bgw);
         if(party==1)res.print();
 

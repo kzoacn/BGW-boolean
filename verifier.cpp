@@ -12,7 +12,7 @@ using emp::RepIO;
 using emp::Hash;
   
 bool verify(){
-    MOD.from_hex("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
+    MOD.from_dec(MOD_STR);
 
     FILE *fp[n+1];
     for(int i=1;i<=n;i++){
@@ -91,6 +91,8 @@ bool verify(){
             BigInt input=views[x].input;
             BigInt res=compute(x,input,bgw2);
             res.print();
+            cerr<<"add gate "<<bgw2->add_cnt<<endl;
+            cerr<<"mul gate "<<bgw2->mul_cnt<<endl;
 
             for(int j=1;j<=open_num;j++)if(i!=j){
                 int y=perm[j];
@@ -125,6 +127,7 @@ int main(int argc,char **argv){
         puts("No");
     }
 
+    
 
     return 0;
 }

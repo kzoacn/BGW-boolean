@@ -35,6 +35,7 @@ class BigInt { public:
 	BigInt sub_mod(const BigInt & b, const BigInt& m, BN_CTX *ctx = default_ctx);
 	BigInt mul_mod(const BigInt & b, const BigInt& m, BN_CTX *ctx = default_ctx);
 	BigInt pow_mod(const BigInt &k, const BigInt& m, BN_CTX *ctx = default_ctx);
+	BigInt inv_mod(const BigInt& m, BN_CTX *ctx = default_ctx);
 };	
 
 
@@ -121,6 +122,13 @@ inline BigInt BigInt::pow_mod(const BigInt & b, const BigInt &m,  BN_CTX *ctx) {
 	return ret;
 }
 
+inline BigInt BigInt::inv_mod(const BigInt &m,  BN_CTX *ctx) {
+	BigInt ret;
+	//BN_mod_exp(ret.n,n,b.n,m.n,ctx);
+	BN_mod_inverse(ret.n,n,m.n,ctx);
+	return ret;
+}
+
 inline BigInt BigInt::mul(const BigInt &oth, BN_CTX *ctx) {
 	BigInt ret;
 	BN_mul(ret.n, n, oth.n, ctx);
@@ -136,7 +144,7 @@ inline BigInt BigInt::mod(const BigInt &oth, BN_CTX *ctx) {
 class PRNG{
 	emp::Hash hash;
 	int counter=0;
-	char dig[emp::Hash::DIGEST_SIZE];
+	char dig[emp::Hash::DIGEST_SIZE*8];
 public:
 	unsigned char seed[256];
 	PRNG(){
@@ -163,11 +171,13 @@ public:
 	}
     BigInt rand_range(const BigInt &m){
         BigInt ret;
-		hash.reset();
-		hash.put(seed,256);
-		hash.put(&counter,4);
-		counter++;
-		hash.digest(dig);
+		for(int i=0;i<8;i++){
+			hash.reset();
+			hash.put(seed,256);
+			hash.put(&counter,4);
+			counter++;
+			hash.digest(dig+i*emp::Hash::DIGEST_SIZE);
+		}
 		BN_bin2bn((unsigned char*)dig,sizeof(dig),ret.n);
         ret=ret.mod(m);
         return ret;
