@@ -6,9 +6,9 @@
 
 ## Compile
 
+To switch between poseidon hash and RSA, modify `program.hpp`.
+
 ```
-git clone https://github.com/kzoacn/BGW
-cd BGW
 make prover
 make verifier
 ```
@@ -20,4 +20,4 @@ make verifier
 ./verifier
 ```
 
-##
+
