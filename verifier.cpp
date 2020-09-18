@@ -66,6 +66,7 @@ bool verify(){
         vector<View<n> >views;
         views.resize(n+1);
         for(int i=1;i<=open_num;i++){
+            cerr<<"reading "<<i<<endl;
             int x=perm[i];
             static unsigned char tmp[MAX_SIZE];
             int size;
@@ -88,9 +89,10 @@ bool verify(){
             
             bgw2->prng=views[x].prng;
             bgw2->prng.rewind();
-            BigInt input=views[x].input;
-            BigInt res=compute(x,input,bgw2);
-            res.print();
+            vector<BigInt>inputs=views[x].inputs;
+            auto res=compute(x,inputs,bgw2);
+            for(auto r: res)
+                r.print();
             cerr<<"add gate "<<bgw2->add_cnt<<endl;
             cerr<<"mul gate "<<bgw2->mul_cnt<<endl;
 

@@ -17,6 +17,9 @@ public:
     virtual void set(Int &c,BigInt a,int p)=0;
     virtual void add(Int &c,const Int &a,const Int &b)=0;
     virtual void mul(Int &c,const Int &a,const Int &b)=0;
+    virtual void onot(Int &c,const Int &a)=0;
+    virtual void oxor(Int &c,const Int &a,const Int &b)=0;
+    virtual void oand(Int &c,const Int &a,const Int &b)=0;
     virtual BigInt reveal(const Int &a)=0;
 };
 
@@ -90,6 +93,12 @@ public:
         add_cnt++;
     }
 
+    void sub(Int &c,const Int &a,const Int &b){
+        c.val=a.val;
+        c.val=c.val.sub_mod(b.val,MOD);
+        add_cnt++;
+    }
+
     Int share(BigInt a,int p){
         Int c;
         if(p==0){
@@ -147,6 +156,30 @@ public:
         }
     }
 
+    void oxor(Int &c,const Int &a,const Int &b){
+        //a(1-b)+b(1-a)
+        Int one,t1,t2;
+        set(one,BigInt(1),0);
+        sub(t1,one,b);
+        mul(t1,a,t1);
+
+        sub(t2,one,a);
+        mul(t2,b,t2);
+
+        add(c,t1,t2);
+    }
+
+    void onot(Int &c,const Int &a){
+        //(1-a)
+        Int one;
+
+        sub(c,one,a);
+    }
+    void oand(Int &c,const Int &a,const Int &b){
+        mul(c,a,b);
+    }
+    
+
     BigInt reveal(const Int &a){
         BigInt point[n+1];
         point[party]=a.val;
@@ -176,14 +209,21 @@ public:
 using emp::Hash;
 template<int n>
 struct View{
-    BigInt input;
+    vector<BigInt> inputs;
     PRNG prng;
     vector<vector<char> >trans;
     void from_bin(unsigned char *in){
-        int size;
-        memcpy(&size,in,4);
-        input.from_bin(in+4,size);
+        int size=0;
+        int sz;
+        memcpy(&sz,in,4);
         size+=4;
+        inputs.resize(sz);
+        for(int i=0;i<sz;i++){
+            int sz=MOD.size();
+            inputs[i].from_bin(in+size,sz);
+            size+=sz;    
+        }
+
         memcpy(prng.seed,in+size,sizeof(prng.seed));
         size+=sizeof(prng.seed);
         trans.resize(n+1);
@@ -199,10 +239,16 @@ struct View{
         }
     }
     void to_bin(unsigned char *out){
-        int size=input.size();
-        memcpy(out,&size,4);
+        int size=0;
+        int sz=inputs.size();
+        memcpy(out,&sz,4);
         size+=4;
-        input.to_bin(out+4);
+        for(int i=0;i<inputs.size();i++){
+            int sz=MOD.size();
+            inputs[i].to_bin(out+size);
+            size+=sz;    
+        }
+        
         memcpy(out+size,prng.seed,sizeof(prng.seed));
         size+=sizeof(prng.seed);
         for(int i=1;i<=n;i++){
@@ -215,8 +261,9 @@ struct View{
     }
     int size(){
         int size=0;
+        int sz=inputs.size();
         size+=4;
-        size+=input.size();
+        size+=MOD.size()*inputs.size();    
         size+=sizeof(prng.seed);
         for(int i=1;i<=n;i++){
             int sz=trans[i].size();

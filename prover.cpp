@@ -39,12 +39,20 @@ int main(int argc,char **argv){
         cerr<<"proveing "<<it<<endl;
         MPIO<RecIO,n> *io=new MPIO<RecIO,n>(party,ip,port,true);
         BGW<RecIO,n,n/2> *bgw=new BGW<RecIO,n,n/2>(io,party,MOD);
-        BigInt input(party);
-        BigInt res=compute(party,input,bgw);
-        if(party==1)res.print();
+        vector<BigInt>inputs;
+        /*for(int i=0;i<8;i++){
+            int x=party;
+            inputs.push_back(BigInt(x>>i&1));
+        }*/
+        BigInt in(party);
+        inputs.push_back(in);
+        auto res=compute(party,inputs,bgw);
+        if(party==1){
+            for(auto r:res)
+                r.print();
+        }
 
-        
-        views[it].input=input;
+        views[it].inputs=inputs;
         views[it].prng=bgw->prng;
         views[it].trans.resize(n+1);
         
@@ -61,6 +69,7 @@ int main(int argc,char **argv){
         
         view_all.put(views_hash[it].data(),views_hash[it].size());
 
+        
         delete io;
         delete bgw;
     }

@@ -10,9 +10,11 @@
 
 using namespace std;
 
-#define RSA_IMPL
+//#define RSA_IMPL
 
 //#define HASH_IMPL
+
+#define COMP_IMPL
 
 
 
@@ -37,7 +39,9 @@ BigInt compute(int party,BigInt input,MPC *bgw){
 }
 
 
-#else
+#endif
+
+#ifdef HASH_IMPL
 
 #define MOD_STR "52435875175126190479447740508185965837690552500527637822603658699938581184513"
 
@@ -179,7 +183,101 @@ BigInt compute(int party,BigInt input,MPC *bgw){
 
 #endif
 
+#ifdef COMP_IMPL
 
+#define MOD_STR "13"
+
+
+vector<Int> adder(vector<Int> a,vector<Int> b,MPC *bgw){
+    vector<Int>res;
+    assert(a.size()==b.size());
+    Int c;
+    bgw->set(c,BigInt(0),0);
+    for(int i=0;i<a.size();i++){
+        Int p,q,r,t1,t2;
+        bgw->oxor(p,a[i],b[i]);
+        bgw->oand(q,a[i],b[i]);
+
+        bgw->oxor(r,p,c);
+
+        bgw->oand(t1,p,c);
+        bgw->oxor(c,q,t1);
+
+        res.push_back(r);
+    }
+    return res;
+}
+
+vector<Int> neg(vector<Int> a,MPC *bgw){
+    vector<Int>c,one;
+    c.resize(a.size());
+    Int zero;
+    bgw->set(zero,BigInt(0),0);
+    for(int i=0;i<a.size();i++){
+        bgw->onot(c[i],a[i]);
+        one.push_back(zero);    
+    }
+    bgw->set(one[0],BigInt(1),0);
+    c=adder(c,one,bgw);
+    return c;
+}
+
+
+vector<Int> suber(vector<Int> a,vector<Int> b,MPC *bgw){
+    vector<Int>b2;
+    b2=neg(b,bgw);
+    auto res=adder(a,b2,bgw);
+    return res;
+}
+Int less_than(vector<Int> a,vector<Int> b,MPC *bgw){
+    auto res=suber(a,b,bgw);
+    return res[res.size()-1];
+}
+
+
+vector<BigInt> compute(int party,vector<BigInt> inputs,MPC *bgw){
+
+
+    Int sum,s2;
+    bgw->set(sum,BigInt(0),0);
+    Int tmp;
+    for(int i=1;i<=n;i++){
+        BigInt in(party);
+        bgw->set(tmp,in,i);
+        bgw->add(sum,sum,tmp);
+    }
+    vector<BigInt>outputs;
+    outputs.push_back(bgw->reveal(sum));
+    return outputs;
+
+
+
+    
+
+    /*Int sum;
+    bgw->set(sum,BigInt(0),0);
+    Int tmp;
+    vector<Int>bits[n+1];
+    
+    vector<Int>s;
+    s.resize(inputs.size());
+    for(int i=1;i<=n;i++){
+        bits[i].resize(inputs.size());
+        for(int j=0;j<inputs.size();j++){
+            bgw->set(bits[i][j],inputs[j],i);
+        }
+        s=adder(s,bits[i],bgw);
+    }
+
+    vector<BigInt>res;
+    for(int i=0;i<s.size();i++){
+        res.push_back(bgw->reveal(s[i]));
+    }
+
+    return res;*/
+}
+
+#endif
 
 
 #endif
