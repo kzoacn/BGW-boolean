@@ -219,7 +219,9 @@ struct View{
         size+=4;
         inputs.resize(sz);
         for(int i=0;i<sz;i++){
-            int sz=MOD.size();
+            int sz;
+            memcpy(&sz,in+size,4);
+            size+=4;
             inputs[i].from_bin(in+size,sz);
             size+=sz;    
         }
@@ -244,7 +246,9 @@ struct View{
         memcpy(out,&sz,4);
         size+=4;
         for(int i=0;i<inputs.size();i++){
-            int sz=MOD.size();
+            int sz=inputs[i].size();
+            memcpy(out+size,&sz,4);
+            size+=4; 
             inputs[i].to_bin(out+size);
             size+=sz;    
         }
@@ -261,9 +265,12 @@ struct View{
     }
     int size(){
         int size=0;
-        int sz=inputs.size();
         size+=4;
-        size+=MOD.size()*inputs.size();    
+        for(int i=0;i<inputs.size();i++){
+            int sz=inputs[i].size();
+            size+=4; 
+            size+=sz;    
+        }  
         size+=sizeof(prng.seed);
         for(int i=1;i<=n;i++){
             int sz=trans[i].size();
@@ -275,6 +282,7 @@ struct View{
     void digest(char *out){
         Hash view_hash;
         unsigned char *tmp=new unsigned char[size()];
+        memset(tmp,0,size());
         to_bin(tmp);
         view_hash.put(tmp,size());
         delete []tmp;

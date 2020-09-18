@@ -66,7 +66,7 @@ bool verify(){
         vector<View<n> >views;
         views.resize(n+1);
         for(int i=1;i<=open_num;i++){
-            cerr<<"reading "<<i<<endl;
+            //cerr<<"reading "<<i<<endl;
             int x=perm[i];
             static unsigned char tmp[MAX_SIZE];
             int size;
@@ -97,6 +97,7 @@ bool verify(){
             cerr<<"mul gate "<<bgw2->mul_cnt<<endl;
 
             for(int j=1;j<=open_num;j++)if(i!=j){
+                //cerr<<"open "<<perm[j]<<endl;
                 int y=perm[j];
                 char tmp1[Hash::DIGEST_SIZE],tmp2[Hash::DIGEST_SIZE];
                 io2->send_io[y]->send_hash.digest(tmp1);

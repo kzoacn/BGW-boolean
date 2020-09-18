@@ -36,16 +36,14 @@ int main(int argc,char **argv){
     views.resize(REP);
 
     for(int it=0;it<REP;it++){
-        cerr<<"proveing "<<it<<endl;
+        cerr<<"proving "<<it<<endl;
         MPIO<RecIO,n> *io=new MPIO<RecIO,n>(party,ip,port,true);
         BGW<RecIO,n,n/2> *bgw=new BGW<RecIO,n,n/2>(io,party,MOD);
         vector<BigInt>inputs;
-        /*for(int i=0;i<8;i++){
+        for(int i=0;i<8;i++){
             int x=party;
             inputs.push_back(BigInt(x>>i&1));
-        }*/
-        BigInt in(party);
-        inputs.push_back(in);
+        }
         auto res=compute(party,inputs,bgw);
         if(party==1){
             for(auto r:res)
@@ -118,12 +116,15 @@ int main(int argc,char **argv){
             }
         }while(!check_perm(perm));
         
-        for(int i=1;i<=open_num;i++)if(party==perm[i]){
-            int size=views[it].size();
-            unsigned char *tmp=new unsigned char[size];
-            views[it].to_bin(tmp);
-            fwrite(&size,1,4,fp);
-            fwrite(tmp,1,size,fp);
+        for(int i=1;i<=open_num;i++){
+            //if(party==1)   cerr<<"open "<<perm[i]<<endl;
+            if(party==perm[i]){
+                int size=views[it].size();
+                unsigned char *tmp=new unsigned char[size];
+                views[it].to_bin(tmp);
+                fwrite(&size,1,4,fp);
+                fwrite(tmp,1,size,fp);
+            }
         }
     }
     fclose(fp);

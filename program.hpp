@@ -10,11 +10,6 @@
 
 using namespace std;
 
-//#define RSA_IMPL
-
-//#define HASH_IMPL
-
-#define COMP_IMPL
 
 
 
@@ -238,7 +233,7 @@ Int less_than(vector<Int> a,vector<Int> b,MPC *bgw){
 vector<BigInt> compute(int party,vector<BigInt> inputs,MPC *bgw){
 
 
-    Int sum,s2;
+    /*Int sum,s2;
     bgw->set(sum,BigInt(0),0);
     Int tmp;
     for(int i=1;i<=n;i++){
@@ -246,15 +241,16 @@ vector<BigInt> compute(int party,vector<BigInt> inputs,MPC *bgw){
         bgw->set(tmp,in,i);
         bgw->add(sum,sum,tmp);
     }
+    bgw->mul(sum,sum,sum);
     vector<BigInt>outputs;
     outputs.push_back(bgw->reveal(sum));
-    return outputs;
+    return outputs;*/
 
 
 
     
 
-    /*Int sum;
+    Int sum;
     bgw->set(sum,BigInt(0),0);
     Int tmp;
     vector<Int>bits[n+1];
@@ -274,7 +270,7 @@ vector<BigInt> compute(int party,vector<BigInt> inputs,MPC *bgw){
         res.push_back(bgw->reveal(s[i]));
     }
 
-    return res;*/
+    return res;
 }
 
 #endif
