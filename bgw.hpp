@@ -1,81 +1,79 @@
 #ifndef _BGW__HPP
 #define _BGW__HPP
 
-#include "bigint.hpp"
+#include "GF.hpp"
 #include "mpio.hpp"
 #include <cassert>
 #include "constant.h"
 class Int{
 public:
-    BigInt val;
+    GF val;
     
 };
 
 
 class MPC{
 public:
-    virtual void set(Int &c,BigInt a,int p)=0;
-    virtual void add(Int &c,const Int &a,const Int &b)=0;
-    virtual void mul(Int &c,const Int &a,const Int &b)=0;
+    virtual void set(Int &c,GF a,int p)=0;
+
     virtual void onot(Int &c,const Int &a)=0;
     virtual void oxor(Int &c,const Int &a,const Int &b)=0;
     virtual void oand(Int &c,const Int &a,const Int &b)=0;
-    virtual BigInt reveal(const Int &a)=0;
+    
+    virtual GF reveal(const Int &a)=0;
 };
 
 template<class IO,int n,int t>
 class BGW : public MPC{
 
 public:
-    BigInt MOD;
     int party;
     MPIO<IO,n> *io;
     PRNG prng;
 
-    BigInt lambda[n+1];    
-    BigInt lambda_t[n+1];    
-    int add_cnt;
-    int mul_cnt;
+    GF lambda[n+1];    
+    GF lambda_t[n+1];    
+    int xor_cnt;
+    int and_cnt;
 
-    BGW(MPIO<IO,n> *io,int party,BigInt MOD){
-        add_cnt=mul_cnt=0;
+    BGW(MPIO<IO,n> *io,int party){
+        xor_cnt=and_cnt=0;
         this->io=io;
         this->party=party;
-        this->MOD=MOD;
         //2*t+1==n
         //cerr<<"hi"<<endl;
 
         assert(2*t+1==n);
-        BigInt zero;zero.from_ulong(0);
-        BigInt two;two.from_ulong(2);
+        GF zero(0);
+
         for(int i=1;i<=n;i++){
-            BigInt num,den,xi,xj,tmp;
-            num.from_ulong(1);
-            den.from_ulong(1);
-            xi.from_ulong(i);
+            GF num,den,xi,xj,tmp;
+            num=1;
+            den=1;
+            xi=i;
             for(int j=1;j<=n;j++)if(i!=j){
-                xj.from_ulong(j);
-                tmp=zero.sub_mod(xj,MOD);
-                num=num.mul_mod(tmp,MOD);
-                den=den.mul_mod(xi.sub_mod(xj,MOD),MOD);
+                xj=j;
+                tmp=zero.sub(xj);
+                num=num.mul(tmp);
+                den=den.mul(xi.sub(xj));
             }
-            den=den.inv_mod(MOD);
-            lambda[i]=num.mul_mod(den,MOD);
+            den=den.inv();
+            lambda[i]=num.mul(den);
         }
 
         for(int i=1;i<=t+1;i++){
-            BigInt num,den,xi,xj,tmp;
-            num.from_ulong(1);
-            den.from_ulong(1);
-            xi.from_ulong(i);
+            GF num,den,xi,xj,tmp;
+            num=1;
+            den=1;
+            xi=i;
             for(int j=1;j<=t+1;j++)if(i!=j){
-                xj.from_ulong(j);
-                tmp=zero.sub_mod(xj,MOD);
-                num=num.mul_mod(tmp,MOD);
-                den=den.mul_mod(xi.sub_mod(xj,MOD),MOD);
+                xj=j;
+                tmp=zero.sub(xj);
+                num=num.mul(tmp);
+                den=den.mul(xi.sub(xj));
             }
-            den=den.inv_mod(MOD);
-            lambda_t[i]=num.mul_mod(den,MOD);
+            den=den.inv();
+            lambda_t[i]=num.mul(den);
         }
     }
 
@@ -83,121 +81,96 @@ public:
 
     }
 
-    void set(Int &c,BigInt a,int p){
+    void set(Int &c,GF a,int p){
         c=share(a,p);
     }
 
-    void add(Int &c,const Int &a,const Int &b){
-        c.val=a.val;
-        c.val=c.val.add_mod(b.val,MOD);
-        add_cnt++;
-    }
-
-    void sub(Int &c,const Int &a,const Int &b){
-        c.val=a.val;
-        c.val=c.val.sub_mod(b.val,MOD);
-        add_cnt++;
-    }
-
-    Int share(BigInt a,int p){
+    Int share(GF a,int p){
         Int c;
         if(p==0){
-            c.val.from_ulong(1);
-            BigInt P;
-            P.from_ulong(party);
+            c.val=1;
+            GF P=party;
             for(int i=1;i<=t;i++)
-                c.val=c.val.mul_mod(P,MOD);
-            c.val=c.val.add_mod(a,MOD);
+                c.val=c.val.mul(P);
+            c.val=c.val.add(a);
             // f(x)=x^t+a
         }else{
-            BigInt cof[t+1];
+            GF cof[t+1];
             cof[0]=a;
             
-            BigInt bound(10);
             for(int i=1;i<=t;i++)
-                cof[i]=prng.rand_range(bound);
+                cof[i]=prng.rand_GF();
             
             if(p==party){
-                BigInt sum(0);
+                GF sum(0);
                 
                 for(int i=1;i<=n;i++){
-                    BigInt r=cof[t];
-                    BigInt x;x.from_ulong(i);
+                    GF r=cof[t];
+                    GF x=i;
                     for(int j=t-1;j>=0;j--){
-                        r=r.mul_mod(x,MOD);
-                        r=r.add_mod(cof[j],MOD);
+                        r=r.mul(x);
+                        r=r.add(cof[j]);
                     }
-                    sum=sum.add_mod(lambda[i].add(r),MOD);
+                    sum=sum.add(lambda[i].add(r));
                     
-
                     if(i==party){
                         c.val=r;
                     }else{
-                        io->send_bigint(i,r);
-                        
+                        io->send_GF(i,r);    
                     }
                 }
 
             }else{
-                io->recv_bigint(p,c.val);
+                io->recv_GF(p,c.val);
             }
         }    
         return c;    
     }
 
-    void mul(Int &c,const Int &a,const Int &b){
-        mul_cnt++;
-        BigInt ab=a.val;
-        ab=ab.mul_mod(b.val,MOD);
-        c.val.from_ulong(0);
-        for(int i=1;i<=n;i++){
-            Int tmp=share(ab,i);
-            c.val=c.val.add_mod(lambda[i].mul_mod(tmp.val,MOD),MOD);
-        }
-    }
 
     void oxor(Int &c,const Int &a,const Int &b){
-        //a(1-b)+b(1-a)
-        Int one,t1,t2;
-        set(one,BigInt(1),0);
-        sub(t1,one,b);
-        mul(t1,a,t1);
-
-        sub(t2,one,a);
-        mul(t2,b,t2);
-
-        add(c,t1,t2);
+       c.val=a.val;
+       c.val=c.val.add(b.val);
+       xor_cnt++;
     }
 
     void onot(Int &c,const Int &a){
         //(1-a)
         Int one;
+        set(one,GF(1),0);
 
-        sub(c,one,a);
+        oxor(c,a,one);
     }
     void oand(Int &c,const Int &a,const Int &b){
-        mul(c,a,b);
+        and_cnt++;
+        GF ab=a.val;
+        ab=ab.mul(b.val);
+        c.val=0;
+        for(int i=1;i<=n;i++){
+            Int tmp=share(ab,i);
+            c.val=c.val.add(lambda[i].mul(tmp.val));
+        }
     }
     
 
-    BigInt reveal(const Int &a){
-        BigInt point[n+1];
+    GF reveal(const Int &a){
+        GF point[n+1];
         point[party]=a.val;
 
         for(int i=1;i<=n;i++)
         for(int j=1;j<=n;j++)if(i!=j){
             if(i==party){
-                io->send_bigint(j,a.val);
+                io->send_GF(j,a.val);
             }
             if(j==party){
-                io->recv_bigint(i,point[i]);
+                io->recv_GF(i,point[i]);
             }
         } 
-        BigInt ret(0);
+        GF ret(0);
         for(int i=1;i<=t+1;i++){
-            BigInt tmp;
-            tmp=lambda_t[i].mul_mod(point[i],MOD);
-            ret=ret.add_mod(tmp,MOD);
+            GF tmp;
+            tmp=lambda_t[i].mul(point[i]);
+            ret=ret.add(tmp);
         }
         return ret;
     }
@@ -209,7 +182,7 @@ public:
 using emp::Hash;
 template<int n>
 struct View{
-    vector<BigInt> inputs;
+    vector<GF> inputs;
     PRNG prng;
     vector<vector<char> >trans;
     void from_bin(unsigned char *in){
@@ -222,7 +195,7 @@ struct View{
             int sz;
             memcpy(&sz,in+size,4);
             size+=4;
-            inputs[i].from_bin(in+size,sz);
+            inputs[i].from_bin(in+size);
             size+=sz;    
         }
 

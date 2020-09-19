@@ -112,7 +112,7 @@ class RecIO: public IOChannel<RecIO> { public:
 	~RecIO(){
 		fflush(stream);
 		close(consocket);
-		delete[] buffer;
+		//delete[] buffer;
 	}
 
 	void set_nodelay() {

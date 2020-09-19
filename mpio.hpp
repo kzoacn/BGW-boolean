@@ -2,7 +2,7 @@
 #define MP_IO_HPP
 
 #include "RecIO.hpp"
-#include "bigint.hpp"
+#include "GF.hpp"
 #include "constant.h"
 #include <vector>
 #include <string>
@@ -43,22 +43,12 @@ public:
         recv_io[i]->recv_data(data,len);
     }
     
-        void send_bigint(int i,BigInt x){
-            int size=x.size();
-            unsigned char *tmp=new unsigned char[size];
-            x.to_bin(tmp);
-            
-            send_io[i]->send_data(&size,4);
-            send_io[i]->send_data(tmp,size);
+        void send_GF(int i,GF x){
+            send_io[i]->send_data(&x,sizeof(x));
             send_io[i]->flush();
         }
-        void recv_bigint(int i,BigInt &x){
-            int size=1;
-            
-            recv_io[i]->recv_data(&size,4);
-            unsigned char *tmp=new unsigned char[size];
-            recv_io[i]->recv_data(tmp,size);
-            x.from_bin(tmp,size);
+        void recv_GF(int i,GF &x){
+            recv_io[i]->recv_data(&x,sizeof(x));
         }
     
 };

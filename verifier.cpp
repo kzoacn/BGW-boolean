@@ -12,7 +12,6 @@ using emp::RepIO;
 using emp::Hash;
   
 bool verify(){
-    MOD.from_dec(MOD_STR);
 
     FILE *fp[n+1];
     for(int i=1;i<=n;i++){
@@ -85,16 +84,16 @@ bool verify(){
                 io2->recv_io[j]->recv_rec=views[x].trans[j];
             }
 
-            BGW<RepIO,n,n/2> *bgw2=new BGW<RepIO,n,n/2>(io2,x,MOD);
+            BGW<RepIO,n,n/2> *bgw2=new BGW<RepIO,n,n/2>(io2,x);
             
             bgw2->prng=views[x].prng;
             bgw2->prng.rewind();
-            vector<BigInt>inputs=views[x].inputs;
+            vector<GF>inputs=views[x].inputs;
             auto res=compute(x,inputs,bgw2);
             for(auto r: res)
                 r.print();
-            cerr<<"add gate "<<bgw2->add_cnt<<endl;
-            cerr<<"mul gate "<<bgw2->mul_cnt<<endl;
+            cerr<<"add gate "<<bgw2->xor_cnt<<endl;
+            cerr<<"mul gate "<<bgw2->and_cnt<<endl;
 
             for(int j=1;j<=open_num;j++)if(i!=j){
                 //cerr<<"open "<<perm[j]<<endl;
